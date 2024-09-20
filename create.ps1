@@ -6,7 +6,10 @@ if (-not $projectName) {
     Write-Host "Por favor, proporciona un nombre para el proyecto."
     exit
 }
-
+if ($projectName -match "_") {
+    Write-Host "El nombre del proyecto no puede contener el simbolo '_'."
+    exit
+}
 # Obtener la ruta del directorio actual donde se ejecuta el script
 $basePath = Get-Location
 
