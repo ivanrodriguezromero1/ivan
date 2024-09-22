@@ -147,7 +147,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'com.android.tools.build:gradle:8.1.4'
     }
 }
 
@@ -160,11 +160,7 @@ allprojects {
 "@
 Set-Content -Path "$projectPath\build.gradle" -Value $rootGradleContent
 
-# Obtener las rutas del SDK y NDK locales desde las variables de entorno y reemplazar las barras invertidas
-$sdkPath = $Env:ANDROID_HOME -replace '\\', '\\'
 $ndkPath = $Env:ANDROID_NDK_HOME -replace '\\', '\\'
-
-
 
 # Contenido del archivo build.gradle para el módulo app
 $gradleContent = @"
@@ -174,11 +170,11 @@ plugins {
 
 android {
     namespace 'com.$projectName'
-    compileSdkVersion 33
+    compileSdkVersion 35
     defaultConfig {
         applicationId "com.$projectName"
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
         ndkPath "$ndkPath"
