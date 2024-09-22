@@ -6,10 +6,7 @@ if (-not $projectName) {
     Write-Host "Por favor, proporciona un nombre para el proyecto."
     exit
 }
-if ($projectName -match "_") {
-    Write-Host "El nombre del proyecto no puede contener el simbolo '_'."
-    exit
-}
+
 # Obtener la ruta del directorio actual donde se ejecuta el script
 $basePath = Get-Location
 
@@ -68,12 +65,18 @@ $proguardRulesContent = @"
 Set-Content -Path "$projectPath\app\proguard-rules.pro" -Value $proguardRulesContent
 
 # Contenido del archivo lib.cpp
+if ($projectName -match "_") {
+    # Si el nombre contiene un guion bajo, usar "_1" en lugar de "_"
+    $cppFunctionName = $projectName -replace "_", "_1"
+} else {
+    $cppFunctionName = $projectName
+}
 $cppContent = @"
 #include <jni.h>
 #include <string>
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_${projectName}_MainActivity_stringFromJNI(
+Java_com_${cppFunctionName}_MainActivity_stringFromJNI(
     JNIEnv* env,
     jobject /* this */) {
     std::string hello = "$projectName desde C++";
