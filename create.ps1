@@ -1,15 +1,20 @@
 param (
-    [string]$projectName     # Nombre del proyecto
+    [string]$projectName,     # Nombre del proyecto
+    [string]$subdomain        # Subdominio
 )
 
 if (-not $projectName) {
     Write-Host "Por favor, proporciona un nombre para el proyecto."
     exit
 }
-if ($projectName -match "_") {
-    Write-Host "El nombre del proyecto no puede contener el simbolo '_'."
+
+if (-not $subdomain) {
+    Write-Host "Por favor, proporciona un subdominio."
     exit
 }
+$projectName = $projectName.ToLower()
+$subdomain = $subdomain.ToLower()
+
 # Obtener la ruta del directorio actual donde se ejecuta el script
 $basePath = Get-Location
 
@@ -22,7 +27,7 @@ New-Item -Path $projectPath -ItemType Directory -Force > $null
 # Crear la carpeta del módulo app
 New-Item -Path "$projectPath\app" -ItemType Directory -Force > $null
 New-Item -Path "$projectPath\app\src\main\cpp" -ItemType Directory -Force > $null
-New-Item -Path "$projectPath\app\src\main\java\com\$projectName" -ItemType Directory -Force > $null
+New-Item -Path "$projectPath\app\src\main\java\com\$projectName\$subdomain" -ItemType Directory -Force > $null
 New-Item -Path "$projectPath\app\src\main\res" -ItemType Directory -Force > $null
 
 # Definir el directorio de las imágenes de ic_launcher
@@ -55,7 +60,7 @@ $proguardRulesContent = @"
 -keep class androidx.** { *; }
 
 # Mantener la clase principal de la actividad
--keep class com.${projectName}.MainActivity { *; }
+-keep class com.${projectName}.${subdomain}.MainActivity { *; }
 
 # Mantener todos los métodos nativos (JNI) y bibliotecas usadas
 -keepclasseswithmembernames class * {
@@ -68,12 +73,24 @@ $proguardRulesContent = @"
 Set-Content -Path "$projectPath\app\proguard-rules.pro" -Value $proguardRulesContent
 
 # Contenido del archivo lib.cpp
+if ($projectName -match "_") {
+    # Si el nombre contiene un guion bajo, usar "_1" en lugar de "_"
+    $cppPackageName = $projectName -replace "_", "_1"
+} else {
+    $cppPackageName = $projectName
+}
+if ($subdomain -match "_") {
+    # Si el nombre contiene un guion bajo, usar "_1" en lugar de "_"
+    $cppSubdomainName = $subdomain -replace "_", "_1"
+} else {
+    $cppSubdomainName = $subdomain
+}
 $cppContent = @"
 #include <jni.h>
 #include <string>
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_${projectName}_MainActivity_stringFromJNI(
+Java_com_${cppPackageName}_${cppSubdomainName}_MainActivity_stringFromJNI(
     JNIEnv* env,
     jobject /* this */) {
     std::string hello = "$projectName desde C++";
@@ -84,7 +101,7 @@ Set-Content -Path "$projectPath\app\src\main\cpp\lib.cpp" -Value $cppContent
 
 # Contenido del archivo MainActivity.java con el uso de lib.cpp
 $javaContent = @"
-package com.$projectName;
+package com.$projectName.$subdomain;
 
 import android.os.Bundle;
 import android.widget.TextView;
@@ -111,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
     public native String stringFromJNI();
 }
 "@
-Set-Content -Path "$projectPath\app\src\main\java\com\$projectName\MainActivity.java" -Value $javaContent
+Set-Content -Path "$projectPath\app\src\main\java\com\$projectName\$subdomain\MainActivity.java" -Value $javaContent
 
 # Contenido del archivo AndroidManifest.xml
 $manifestContent = @"
@@ -147,7 +164,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'com.android.tools.build:gradle:8.1.4'
     }
 }
 
@@ -160,11 +177,7 @@ allprojects {
 "@
 Set-Content -Path "$projectPath\build.gradle" -Value $rootGradleContent
 
-# Obtener las rutas del SDK y NDK locales desde las variables de entorno y reemplazar las barras invertidas
-$sdkPath = $Env:ANDROID_HOME -replace '\\', '\\'
 $ndkPath = $Env:ANDROID_NDK_HOME -replace '\\', '\\'
-
-
 
 # Contenido del archivo build.gradle para el módulo app
 $gradleContent = @"
@@ -173,12 +186,12 @@ plugins {
 }
 
 android {
-    namespace 'com.$projectName'
-    compileSdkVersion 33
+    namespace 'com.$projectName.$subdomain'
+    compileSdkVersion 35
     defaultConfig {
-        applicationId "com.$projectName"
+        applicationId "com.$projectName.$subdomain"
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
         ndkPath "$ndkPath"
