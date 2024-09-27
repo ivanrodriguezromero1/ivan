@@ -10,6 +10,9 @@ if (-not $remoteRepo) {
 # Inicializar el repositorio Git
 git init
 
+# Cambiar el nombre de la rama principal de 'master' a 'main'
+git branch -M main
+
 # Agregar todos los archivos al repositorio
 git add .
 
